@@ -12,6 +12,9 @@ export default function App() {
   );
 }
 
+// Deep cloning
+const clone = (x) => JSON.parse(JSON.stringify(x));
+
 function genenrateGrid(rows, columns, mapper) {
   return Array(rows)
     .fill()
@@ -20,17 +23,64 @@ function genenrateGrid(rows, columns, mapper) {
 
 const newTicTacToeGrid = () => genenrateGrid(3, 3, () => null);
 
+const NEXT_TURN = {
+  O: "X",
+  X: "O"
+};
+const getInitialState = () => ({
+  grid: newTicTacToeGrid(),
+  turn: "X"
+});
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case "RESET":
+      return getInitialState();
+
+    case "CLICK": {
+      const { x, y } = action.payload;
+      const { grid, turn } = state;
+
+      if (grid[y][x]) {
+        return state;
+      }
+      const nextState = clone(state);
+
+      nextState.grid[y][x] = turn;
+      nextState.turn = NEXT_TURN[turn];
+
+      return nextState;
+    }
+    default:
+      return state;
+  }
+};
+
 function Game() {
-  const grid = newTicTacToeGrid();
+  const [state, dispatch] = React.useReducer(reducer, getInitialState());
+  const { grid } = state;
+
+  const handleClick = (x, y) => {
+    dispatch({ type: "CLICK", payload: { x, y } });
+  };
+
+  const reset = () => {
+    dispatch({ type: "RESET" });
+  };
+
   return (
     <div>
-      <Grid grid={grid} />
+      <div>
+        <button onClick={reset} type="button">
+          reset
+        </button>
+      </div>
+      <Grid grid={grid} handleClick={handleClick} />
     </div>
   );
 }
 
-function Grid({ grid }) {
-  console.log(grid);
+function Grid({ grid, handleClick }) {
   return (
     <div style={{ display: "inline-block" }}>
       <div
@@ -44,7 +94,13 @@ function Grid({ grid }) {
       >
         {grid.map((row, rowIdx) =>
           row.map((value, colIdx) => (
-            <Cell key={`${colIdx}-${rowIdx}`} value={value} />
+            <Cell
+              key={`${colIdx}-${rowIdx}`}
+              onClick={() => {
+                handleClick(colIdx, rowIdx);
+              }}
+              value={value}
+            />
           ))
         )}
       </div>
@@ -52,7 +108,7 @@ function Grid({ grid }) {
   );
 }
 
-function Cell({ value }) {
+function Cell({ onClick, value }) {
   return (
     <div
       style={{
@@ -61,7 +117,16 @@ function Cell({ value }) {
         height: 100
       }}
     >
-      {value}
+      <button
+        style={{
+          width: "100%",
+          height: "100%"
+        }}
+        onClick={onClick}
+        type="button"
+      >
+        {value}
+      </button>
     </div>
   );
 }
